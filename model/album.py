@@ -6,7 +6,7 @@ class Album:
     id: int
     title: str
     artist_id: int
-    durata: int
+    durata: float
 
     def __str__(self):
         return self.title

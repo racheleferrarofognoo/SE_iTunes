@@ -4,26 +4,27 @@ from model.album import Album
 
 class DAO:
     @staticmethod
-    def get_album_maggiori_di_durata(min_duration):
+    def get_album(durata):
         conn = DBConnect.get_connection()
 
         result = []
 
         cursor = conn.cursor(dictionary=True)
-        query = """ select a.id, a.title, a.artist_id, sum(t.milliseconds)/60000 as durata
+        query = """select a.id, a.title, a.artist_id, sum(t.milliseconds/60000) as durata
                     from album a, track t
                     where a.id = t.album_id 
-                    group by a.id, a.title, a.artist_id 
-                    having durata > %s """
+                    group by a.id, a.title, a.artist_id
+                    having  durata > %s
+                                         """
 
-        cursor.execute(query, (min_duration,))
+        cursor.execute(query, (durata,))
 
         for row in cursor:
             result.append(Album(**row))
 
         cursor.close()
         conn.close()
-        return result #lista di oggetti album
+        return result
 
     @staticmethod
     def get_connessioni():
@@ -32,16 +33,19 @@ class DAO:
         result = []
 
         cursor = conn.cursor(dictionary=True)
-        query = """ SELECT t1.album_id AS a1, t2.album_id AS a2
-                    FROM playlist_track pt1, playlist_track pt2, track t1, track t2
-                    WHERE pt1.playlist_id = pt2.playlist_id and pt1.track_id = t1.id and pt2.track_id = t2.id and t1.album_id < t2.album_id
-                    GROUP BY t1.album_id, t2.album_id """
+        query = """ SELECT DISTINCT t1.album_id as album1, t2.album_id as album2
+                    FROM track t1, track t2, playlist_track pt1, playlist_track pt2
+                    WHERE pt1.playlist_id = pt2.playlist_id 
+                    AND	pt1.track_id != pt2.track_id 
+                    AND t1.id = pt1.track_id 
+                    AND t2.id = pt2.track_id
+                    AND t1.album_id<t2.album_id """
 
         cursor.execute(query)
 
         for row in cursor:
-            result.append((row['a1'], row['a2']))
+            result.append((row["album1"],row["album2"]))
 
         cursor.close()
         conn.close()
-        return result #lista di tuple [(album id 1, album id 2), (..)...]
+        return result

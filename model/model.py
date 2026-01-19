@@ -4,36 +4,62 @@ from database.dao import DAO
 
 class Model:
     def __init__(self):
-        self.G = nx.Graph()
         self.dao = DAO()
-        self.nodi = [] #lista di oggetti
-        self.edges = []
+        self.G = nx.Graph()
+        self.nodi = []
+        self.archi = []
         self.id_map = {}
 
 
+    def get_album(self, durata):
+        album = self.dao.get_album(durata)
+        return album
+
+
     def build_grafo(self, durata):
-        #pulisco
         self.G.clear()
 
-
-        #creo nodi
-        self.lista_album = self.dao.get_album_maggiori_di_durata(durata)
-
-        self.G.add_nodes_from(self.lista_album)
-
+        #nodi
+        self.nodi = self.get_album(durata)
         for nodo in self.nodi:
+            self.G.add_node(nodo)
             self.id_map[nodo.id] = nodo
 
-        #creo archi
-        lista_connessioni = self.dao.get_connessioni()
-        self.G.add_edges_from(lista_connessioni)
+        connessioni = self.dao.get_connessioni()
+        #archi
+        for c in connessioni:
+            if c[0] in self.id_map and c[1] in self.id_map:
+                a1 = self.id_map[c[0]]
+                a2 = self.id_map[c[1]]
+                self.G.add_edge(a1, a2)
 
-        return self.G
+    def get_nodes(self):
+        return list(self.G.nodes())
 
-    def get_component(self, album):
-        if album not in self.G:
-            return []
-        return list(nx.node_connected_component(self.G, album))
+    def get_number_of_nodes_and_edges(self):
+        return self.G.number_of_nodes(), self.G.number_of_edges()
+
+    def analisi_componente(self, a1):
+        somma_durata = 0
+        vicini = nx.node_connected_component(self.G, a1)
+        dimensione = len(vicini)
+        for vicino in vicini:
+            somma_durata += vicino.durata
+
+        return dimensione, somma_durata
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
